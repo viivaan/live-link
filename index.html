@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SahaYak (सहायक) — Public Welfare Information Kiosk</title>
+<!-- Fonts are optional: the page works offline with system fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&family=Noto+Sans+Gurmukhi:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#14231c;--bg:#eef3ef;--ln:#c7d4cb;--g:#1b8a3c;--gd:#126a2b;--o:#e8890c;--r:#d63a2f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Inter,'Noto Sans Devanagari','Noto Sans Gurmukhi','Noto Sans Bengali','Noto Sans Telugu',system-ui,sans-serif}
+header{background:var(--ink);color:#fff;border-bottom:8px solid var(--o);padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:1.4rem;font-weight:800}header p{margin:0;font-size:.85rem;color:#c9ecd6}
+.hr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.85rem;font-weight:600}
+.pill{padding:4px 12px;border-radius:99px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3)}
+.sw{display:flex;flex-wrap:wrap;border:2px solid #fff;border-radius:99px;overflow:hidden;background:#fff}
+.sw button{border:0;padding:6px 14px;font-weight:700;font-size:1rem;font-family:inherit;background:#fff;color:var(--ink);cursor:pointer}
+.sw .on{background:var(--ink);color:#fff}
+main{max-width:1200px;margin:0 auto;padding:20px 16px;display:grid;gap:20px}
+.card{background:#fff;border:2px solid var(--ln);border-radius:16px;padding:20px}
+.hero{display:flex;flex-direction:column;align-items:center;gap:12px}
+h2{margin:0 0 10px;font-size:1.25rem;font-weight:800}h3{margin:12px 0 2px;font-size:1.45rem;line-height:1.25}
+.lab{font-size:.85rem;font-weight:700;color:#3d4f45}.mut{color:#55655c;margin:0}
+
+/* Hero push-button with LED ring */
+.ring{width:172px;height:172px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#8fd3a3,var(--g),#8fd3a3);box-shadow:0 0 22px 4px rgba(27,138,60,.45)}
+.ring.listening{background:conic-gradient(#ff9a92,var(--r),#ff9a92);box-shadow:0 0 30px 8px rgba(214,58,47,.55);animation:pl 1s ease-in-out infinite}
+.ring.busy{background:conic-gradient(#ffd08a,var(--o),#ffd08a);box-shadow:0 0 26px 6px rgba(232,137,12,.5);animation:sp 1.2s linear infinite}
+.ring.busy #mic{animation:sp 1.2s linear infinite reverse}
+#mic{width:120px;height:120px;border-radius:50%;border:6px solid #fff;color:#fff;font-weight:800;font-size:1.1rem;line-height:1.15;font-family:inherit;cursor:pointer;background:radial-gradient(circle at 35% 30%,#34b556,var(--gd));box-shadow:inset 0 -6px 10px rgba(0,0,0,.25),0 6px 12px rgba(0,0,0,.25)}
+#mic:active{transform:translateY(3px)}.listening #mic{background:radial-gradient(circle at 35% 30%,#f0675c,#a82219)}
+@keyframes pl{50%{transform:scale(1.06)}}@keyframes sp{to{transform:rotate(360deg)}}
+button:focus-visible,input:focus-visible{outline:4px solid #1a5fd0;outline-offset:3px}
+
+/* Soundwave visualiser */
+.wave{display:flex;align-items:center;gap:4px;height:56px}
+.wave i{width:6px;height:56px;border-radius:3px;background:#9db2a5;transform:scaleY(.12);transition:transform .09s}
+.wave.listening i{background:var(--r)}.wave.speaking i{background:var(--g)}
+#status{margin:0;font-weight:700;font-size:1.1rem;text-align:center}
+.row{display:flex;gap:8px;width:100%;max-width:760px}
+input[type=text]{flex:1;font:inherit;font-size:1.1rem;padding:12px 14px;border:2px solid var(--ln);border-radius:12px;background:#f7faf8}
+.dark,.grn,.out{font-weight:700;font-size:1rem;font-family:inherit;padding:12px 22px;border-radius:12px;cursor:pointer}
+.dark{background:var(--ink);color:#fff;border:0}.grn{background:var(--g);color:#fff;border:0}.out{background:#fff;border:2px solid var(--ink)}
+.pre{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px;width:100%;max-width:1100px}
+.pre button{text-align:left;padding:10px 12px;border-radius:12px;border:2px solid var(--ln);background:#f7faf8;font-weight:600;font-size:.92rem;font-family:inherit;cursor:pointer}
+.pre button:hover{border-color:var(--g);background:#eaf6ed}
+
+/* Output */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}@media(max-width:900px){.two{grid-template-columns:1fr}}
+.chip{display:inline-block;margin:2px 4px 2px 0;padding:2px 10px;border-radius:99px;background:#e3efe7;border:1px solid #9fc3ad;font-size:.85rem;font-weight:600}.chip.warn{background:#fff1d6;border-color:var(--o)}
+.seen{margin:0 0 12px;font-size:.9rem}.cnt{font-weight:800;margin:0 0 8px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}.tab{padding:6px 14px;border-radius:99px;border:2px solid var(--ink);background:#fff;font-weight:700;font-size:.9rem;font-family:inherit;cursor:pointer}.tab.on{background:var(--ink);color:#fff}
+.ben{margin:12px 0;padding:14px;border-radius:12px;background:#e8f6ec;border:2px solid var(--g)}.ben b{display:block;font-size:1.2rem;color:#0d4d20}
+.no{padding:16px;border-radius:12px;background:#fdeceb;border:2px solid var(--r);font-size:1.15rem;font-weight:700;color:#7d1c15}
+.title{font-weight:800;margin:0 0 6px}
+.steps{padding-left:1.6rem;margin:0;display:grid;gap:8px}.steps label{display:flex;gap:12px;align-items:flex-start;padding:10px;border:2px solid var(--ln);border-radius:12px;cursor:pointer}
+.steps input{width:26px;height:26px;accent-color:var(--g);flex:none}.steps small{display:block;color:#55655c}
+.steps .done .t{text-decoration:line-through;opacity:.55}.steps .last{list-style:none;margin-left:-1.6rem;padding:8px 4px;font-weight:600}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);opacity:0;pointer-events:none;max-width:92vw;padding:12px 20px;border-radius:12px;background:var(--ink);color:#fff;font-weight:600;transition:.3s;z-index:9}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+footer{text-align:center;font-size:.8rem;color:#55655c;padding-bottom:16px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media print{body *{visibility:hidden}#rc,#rc *{visibility:visible}#rc{position:absolute;left:0;top:0;width:100%;border:0}.np{display:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>SahaYak (सहायक) — Public Welfare Information Kiosk</h1><p>Solar-Powered • 100% Offline Rules Engine • Voice-Enabled</p></div>
+  <div class="hr">
+    <span class="pill">🟢 Solar Power: 100% (18V/20W)</span><span class="pill">⚡ Battery: 12.8V LiFePO4</span><span class="pill">🔒 Mode: Local Offline DB</span>
+    <div class="sw"><button data-l="hi" onclick="setLang('hi')">हिंदी</button><button data-l="en" onclick="setLang('en')">English</button><button data-l="pa" onclick="setLang('pa')">ਪੰਜਾਬੀ</button><button data-l="bn" onclick="setLang('bn')">বাংলা</button><button data-l="te" onclick="setLang('te')">తెలుగు</button></div>
+  </div>
+</header>
+<main>
+  <section class="card hero">
+    <div class="ring" id="ring"><button id="mic" onclick="toggle()" aria-label="Speak / बोलें">SPEAK<br>बोलें</button></div>
+    <div class="wave" id="wave" aria-hidden="true"></div>
+    <p id="status" aria-live="polite"></p>
+    <label class="lab" for="tx" data-h="आपका प्रश्न (लाइव ट्रांसक्रिप्ट)" data-e="Your question (live transcript)"></label>
+    <div class="row"><input id="tx" type="text" autocomplete="off" onkeydown="if(event.key==='Enter')run()"><button class="dark" onclick="run()">Query</button></div>
+    <span class="lab" data-h="त्वरित उदाहरण (प्रेज़ेंटेशन के लिए)" data-e="Quick demo scenarios"></span>
+    <div class="pre" id="presets"></div>
+  </section>
+  <section class="two" id="out">
+    <article class="card"><h2 data-h="योजना विवरण" data-e="Matched Scheme Details"></h2><div id="lb"></div></article>
+    <article class="card" id="rc"><h2 data-h="आवश्यक दस्तावेज़ — चरण-दर-चरण" data-e="Required Documents — Step by Step"></h2><div id="rb"></div></article>
+  </section>
+  <footer>Answers come from a fixed local rules table — no cloud AI, no guessing. Results are indicative; confirm at your Gram Panchayat or CSC.</footer>
+</main>
+<div id="toast" role="alert"></div>
+
+<script>
+/* =====================================================================
+   SahaYak — deterministic eligibility engine. Text -> profile -> Boolean rules.
+   Nothing is guessed: a rule passes only if every fact it needs was stated.
+   ===================================================================== */
+
+/* ---------- 1. Documents: key -> [Hindi, English] ---------- */
+const D={
+ aadhaar:['आधार कार्ड','Aadhaar Card'],
+ age:['आयु प्रमाण (वोटर आईडी / जन्म प्रमाण पत्र)','Age Proof (Voter ID / Birth Certificate)'],
+ bpl:['बीपीएल कार्ड / प्रमाण','BPL Card / Certificate'],
+ bank:['आधार से जुड़ा बैंक खाता पासबुक','Aadhaar-linked Bank Passbook'],
+ land:['भूमि रिकॉर्ड (खसरा / खतौनी)','Land Records (Khasra / Khatauni)'],
+ ration:['राशन कार्ड / SECC परिवार आईडी','Ration Card / SECC Family ID'],
+ mobile:['आधार से जुड़ा मोबाइल नंबर','Aadhaar-linked Mobile Number'],
+ house:['बेघर / कच्चे मकान का स्वप्रमाणित घोषणा-पत्र','Self-declaration: homeless / kutcha house'],
+ photo:['पासपोर्ट साइज़ फोटो','Passport-size Photographs'],
+ vendor:['वेंडिंग प्रमाण पत्र / नगर निकाय की सिफारिश','Certificate of Vending / ULB Letter of Recommendation'],
+ birth:['बालिका का जन्म प्रमाण पत्र','Girl Child Birth Certificate'],
+ guardian:['माता-पिता / अभिभावक का पहचान पत्र','Parent / Guardian ID Proof'],
+ address:['पता प्रमाण','Address Proof'],
+ death:['पति का मृत्यु प्रमाण पत्र','Husband’s Death Certificate']
+};
+
+/* ---------- 2. The 10 schemes: sh=short tab name, n=name, b=benefit, r=rule text, d=documents ---------- */
+const S=[
+ {id:'ignoaps',sh:'IGNOAPS',n:['इंदिरा गांधी राष्ट्रीय वृद्धावस्था पेंशन योजना (IGNOAPS)','Indira Gandhi National Old Age Pension (IGNOAPS)'],b:['₹200–₹500 प्रति माह केंद्र से (राज्य अधिक जोड़ सकते हैं)','₹200–₹500 per month from the Centre (states may add more)'],r:['आयु ≥ 60 वर्ष और बीपीएल परिवार','Age ≥ 60 years AND BPL status'],d:['aadhaar','age','bpl','bank']},
+ {id:'pmkisan',sh:'PM-KISAN',n:['पीएम-किसान सम्मान निधि','PM-KISAN Samman Nidhi'],b:['₹6,000 प्रति वर्ष (₹2,000 की 3 किस्तें)','₹6,000 per year in 3 installments of ₹2,000'],r:['किसान और भूमि ≤ 2 हेक्टेयर','Farmer AND landholding ≤ 2 hectares'],d:['land','aadhaar','bank']},
+ {id:'pmayg',sh:'PMAY-G',n:['प्रधानमंत्री आवास योजना – ग्रामीण (PMAY-G)','Pradhan Mantri Awas Yojana – Gramin (PMAY-G)'],b:['पक्का मकान हेतु ₹1.20 लाख (मैदानी) / ₹1.30 लाख (पहाड़ी व कठिन क्षेत्र)','₹1.20 lakh (plains) / ₹1.30 lakh (hilly & difficult areas) for a pucca house'],r:['बेघर या कच्चा मकान और बीपीएल','Homeless or kutcha house AND BPL status'],d:['aadhaar','bpl','house','bank']},
+ {id:'pmuy',sh:'PMUY',n:['प्रधानमंत्री उज्ज्वला योजना (PMUY)','Pradhan Mantri Ujjwala Yojana (PMUY)'],b:['एलपीजी कनेक्शन के लिए वित्तीय सहायता — कनेक्शन की जमा राशि नहीं देनी','Financial assistance for an LPG connection — no deposit to pay'],r:['वयस्क महिला और बीपीएल परिवार','Adult female AND BPL household'],d:['aadhaar','bpl','bank','photo']},
+ {id:'pmjay',sh:'PM-JAY',n:['आयुष्मान भारत पीएम-जय (PM-JAY)','Ayushman Bharat PM-JAY'],b:['₹5,00,000 प्रति परिवार प्रति वर्ष तक मुफ्त इलाज','Free health cover up to ₹5,00,000 per family per year'],r:['बीपीएल परिवार या कमजोर व्यावसायिक श्रेणी','BPL family OR vulnerable occupational category'],d:['aadhaar','ration','mobile']},
+ {id:'pmkmy',sh:'PM-KMY',n:['पीएम किसान मान-धन योजना (PM-KMY)','PM Kisan Maan-Dhan Yojana (PM-KMY)'],b:['60 वर्ष के बाद ₹3,000 प्रति माह पेंशन','₹3,000 per month pension after age 60'],r:['आयु 18–40 वर्ष और छोटा/सीमांत किसान','Age 18–40 AND small/marginal farmer'],d:['aadhaar','age','land','bank']},
+ {id:'svanidhi',sh:'PM-SVANidhi',n:['पीएम स्वनिधि (PM-SVANidhi)','PM SVANidhi'],b:['बिना गारंटी कार्यशील पूंजी ऋण: ₹10,000 → ₹20,000 → ₹50,000','Collateral-free working-capital loan: ₹10,000 → ₹20,000 → ₹50,000'],r:['सत्यापित पथ / ग्रामीण विक्रेता','Verified street / rural vendor'],d:['vendor','aadhaar','bank','mobile']},
+ {id:'ssy',sh:'Sukanya',n:['सुकन्या समृद्धि योजना','Sukanya Samriddhi Yojana'],b:['बालिका के लिए उच्च ब्याज वाला बचत खाता (₹250 से जमा शुरू)','High-interest savings account for a girl child (deposits from ₹250)'],r:['बालिका की आयु 10 वर्ष से कम','Girl child age < 10 years'],d:['birth','guardian','address','photo']},
+ {id:'mgnrega',sh:'MGNREGA',n:['मनरेगा (MGNREGA)','MGNREGA'],b:['प्रति ग्रामीण परिवार प्रति वर्ष 100 दिन का गारंटीशुदा रोजगार','100 days of guaranteed wage employment per rural household per year'],r:['ग्रामीण वयस्क जो शारीरिक श्रम करने को तैयार','Rural adult willing to do manual labour'],d:['photo','aadhaar','address','bank']},
+ {id:'ignwps',sh:'IGNWPS',n:['इंदिरा गांधी राष्ट्रीय विधवा पेंशन योजना (IGNWPS)','Indira Gandhi National Widow Pension (IGNWPS)'],b:['₹300–₹500 प्रति माह केंद्र से (राज्य अधिक जोड़ सकते हैं)','₹300–₹500 per month from the Centre (states may add more)'],r:['विधवा, आयु ≥ 40 वर्ष और बीपीएल','Widow, age ≥ 40 years AND BPL status'],d:['aadhaar','death','age','bpl','bank']}
+];
+
+/* ---------- 2b. Punjabi / Bengali / Telugu text, appended as array entries 2, 3, 4 ---------- */
+const D2={
+ aadhaar:['ਆਧਾਰ ਕਾਰਡ','আধার কার্ড','ఆధార్ కార్డు'],
+ age:['ਉਮਰ ਦਾ ਸਬੂਤ (ਵੋਟਰ ਆਈਡੀ / ਜਨਮ ਸਰਟੀਫਿਕੇਟ)','বয়সের প্রমাণ (ভোটার আইডি / জন্ম সনদ)','వయస్సు రుజువు (ఓటరు ఐడీ / జనన ధృవపత్రం)'],
+ bpl:['ਬੀਪੀਐਲ ਕਾਰਡ / ਸਬੂਤ','বিপিএল কার্ড / প্রমাণ','బీపీఎల్ కార్డు / ధృవీకరణ'],
+ bank:['ਆਧਾਰ ਨਾਲ ਜੁੜੀ ਬੈਂਕ ਪਾਸਬੁੱਕ','আধার-সংযুক্ত ব্যাংক পাসবুক','ఆధార్‌తో అనుసంధానమైన బ్యాంకు పాస్‌బుక్'],
+ land:['ਜ਼ਮੀਨ ਦਾ ਰਿਕਾਰਡ (ਖਸਰਾ / ਖਤੌਨੀ)','জমির রেকর্ড (খতিয়ান / পর্চা)','భూమి రికార్డులు (పట్టాదారు పాస్‌బుక్ / అడంగల్)'],
+ ration:['ਰਾਸ਼ਨ ਕਾਰਡ / SECC ਪਰਿਵਾਰ ਆਈਡੀ','রেশন কার্ড / SECC পরিবার আইডি','రేషన్ కార్డు / SECC కుటుంబ ఐడీ'],
+ mobile:['ਆਧਾਰ ਨਾਲ ਜੁੜਿਆ ਮੋਬਾਈਲ ਨੰਬਰ','আধার-সংযুক্ত মোবাইল নম্বর','ఆధార్‌తో అనుసంధానమైన మొబైల్ నంబర్'],
+ house:['ਬੇਘਰ / ਕੱਚੇ ਮਕਾਨ ਦਾ ਸਵੈ-ਘੋਸ਼ਣਾ ਪੱਤਰ','গৃহহীন / কাঁচা বাড়ির স্ব-ঘোষণাপত্র','నిరాశ్రయ / కచ్చా ఇంటి స్వీయ ప్రకటన'],
+ photo:['ਪਾਸਪੋਰਟ ਸਾਈਜ਼ ਫੋਟੋਆਂ','পাসপোর্ট সাইজ ছবি','పాస్‌పోర్ట్ సైజు ఫొటోలు'],
+ vendor:['ਵੈਂਡਿੰਗ ਸਰਟੀਫਿਕੇਟ / ਨਗਰ ਸੰਸਥਾ ਦੀ ਸਿਫ਼ਾਰਸ਼','ভেন্ডিং সনদ / পুর সংস্থার সুপারিশপত্র','వెండింగ్ సర్టిఫికెట్ / పట్టణ స్థానిక సంస్థ సిఫార్సు లేఖ'],
+ birth:['ਬੱਚੀ ਦਾ ਜਨਮ ਸਰਟੀਫਿਕੇਟ','মেয়ে শিশুর জন্ম সনদ','బాలిక జనన ధృవపత్రం'],
+ guardian:['ਮਾਪਿਆਂ / ਸਰਪ੍ਰਸਤ ਦਾ ਪਛਾਣ ਪੱਤਰ','বাবা-মা / অভিভাবকের পরিচয়পত্র','తల్లిదండ్రులు / సంరక్షకుల గుర్తింపు పత్రం'],
+ address:['ਪਤੇ ਦਾ ਸਬੂਤ','ঠিকানার প্রমাণ','చిరునామా రుజువు'],
+ death:['ਪਤੀ ਦਾ ਮੌਤ ਸਰਟੀਫਿਕੇਟ','স্বামীর মৃত্যু সনদ','భర్త మరణ ధృవపత్రం']
+};
+const S2={
+ ignoaps:{n:['ਇੰਦਰਾ ਗਾਂਧੀ ਰਾਸ਼ਟਰੀ ਬਿਰਧ ਅਵਸਥਾ ਪੈਨਸ਼ਨ ਸਕੀਮ (IGNOAPS)','ইন্দিরা গান্ধী জাতীয় বার্ধক্য ভাতা প্রকল্প (IGNOAPS)','ఇందిరా గాంధీ జాతీయ వృద్ధాప్య పింఛను పథకం (IGNOAPS)'],b:['ਕੇਂਦਰ ਵੱਲੋਂ ₹200–₹500 ਪ੍ਰਤੀ ਮਹੀਨਾ (ਰਾਜ ਹੋਰ ਜੋੜ ਸਕਦੇ ਹਨ)','কেন্দ্র থেকে মাসে ₹200–₹500 (রাজ্য আরও যোগ করতে পারে)','కేంద్రం నుండి నెలకు ₹200–₹500 (రాష్ట్రాలు అదనంగా ఇవ్వవచ్చు)'],r:['ਉਮਰ ≥ 60 ਸਾਲ ਅਤੇ ਬੀਪੀਐਲ ਪਰਿਵਾਰ','বয়স ≥ 60 বছর এবং বিপিএল','వయస్సు ≥ 60 సంవత్సరాలు మరియు బీపీఎల్ కుటుంబం']},
+ pmkisan:{n:['ਪੀਐਮ-ਕਿਸਾਨ ਸਨਮਾਨ ਨਿਧੀ','পিএম-কিষাণ সম্মান নিধি','పీఎం-కిసాన్ సమ్మాన్ నిధి'],b:['₹6,000 ਪ੍ਰਤੀ ਸਾਲ (₹2,000 ਦੀਆਂ 3 ਕਿਸ਼ਤਾਂ)','বছরে ₹6,000 (₹2,000 করে 3টি কিস্তি)','సంవత్సరానికి ₹6,000 (₹2,000 చొప్పున 3 వాయిదాలు)'],r:['ਕਿਸਾਨ ਅਤੇ ਜ਼ਮੀਨ ≤ 2 ਹੈਕਟੇਅਰ','কৃষক এবং জমি ≤ 2 হেক্টর','రైతు మరియు భూమి ≤ 2 హెక్టార్లు']},
+ pmayg:{n:['ਪ੍ਰਧਾਨ ਮੰਤਰੀ ਆਵਾਸ ਯੋਜਨਾ – ਗ੍ਰਾਮੀਣ (PMAY-G)','প্রধানমন্ত্রী আবাস যোজনা – গ্রামীণ (PMAY-G)','ప్రధానమంత్రి ఆవాస్ యోజన – గ్రామీణ (PMAY-G)'],b:['ਪੱਕਾ ਮਕਾਨ ਲਈ ₹1.20 ਲੱਖ (ਮੈਦਾਨੀ) / ₹1.30 ਲੱਖ (ਪਹਾੜੀ ਤੇ ਔਖੇ ਇਲਾਕੇ)','পাকা বাড়ির জন্য ₹1.20 লক্ষ (সমতল) / ₹1.30 লক্ষ (পাহাড়ি ও দুর্গম এলাকা)','పక్కా ఇంటి కోసం ₹1.20 లక్షలు (మైదాన) / ₹1.30 లక్షలు (కొండ & క్లిష్ట ప్రాంతాలు)'],r:['ਬੇਘਰ ਜਾਂ ਕੱਚਾ ਮਕਾਨ ਅਤੇ ਬੀਪੀਐਲ','গৃহহীন বা কাঁচা বাড়ি এবং বিপিএল','నిరాశ్రయులు లేదా కచ్చా ఇల్లు మరియు బీపీఎల్']},
+ pmuy:{n:['ਪ੍ਰਧਾਨ ਮੰਤਰੀ ਉੱਜਵਲਾ ਯੋਜਨਾ (PMUY)','প্রধানমন্ত্রী উজ্জ্বলা যোজনা (PMUY)','ప్రధానమంత్రి ఉజ్వల యోజన (PMUY)'],b:['ਐਲਪੀਜੀ ਕੁਨੈਕਸ਼ਨ ਲਈ ਆਰਥਿਕ ਸਹਾਇਤਾ — ਕੁਨੈਕਸ਼ਨ ਦੀ ਜਮ੍ਹਾਂ ਰਕਮ ਨਹੀਂ ਦੇਣੀ','এলপিজি সংযোগের জন্য আর্থিক সহায়তা — সংযোগের জামানত দিতে হবে না','ఎల్‌పీజీ కనెక్షన్‌కు ఆర్థిక సహాయం — కనెక్షన్ డిపాజిట్ చెల్లించనవసరం లేదు'],r:['ਬਾਲਗ ਔਰਤ ਅਤੇ ਬੀਪੀਐਲ ਪਰਿਵਾਰ','প্রাপ্তবয়স্ক মহিলা এবং বিপিএল পরিবার','వయోజన మహిళ మరియు బీపీఎల్ కుటుంబం']},
+ pmjay:{n:['ਆਯੁਸ਼ਮਾਨ ਭਾਰਤ (PM-JAY)','আয়ুষ্মান ভারত (PM-JAY)','ఆయుష్మాన్ భారత్ (PM-JAY)'],b:['ਹਰ ਪਰਿਵਾਰ ਨੂੰ ਪ੍ਰਤੀ ਸਾਲ ₹5,00,000 ਤੱਕ ਮੁਫ਼ਤ ਇਲਾਜ','প্রতি পরিবারে বছরে ₹5,00,000 পর্যন্ত বিনামূল্যে চিকিৎসা','ప్రతి కుటుంబానికి సంవత్సరానికి ₹5,00,000 వరకు ఉచిత వైద్యం'],r:['ਬੀਪੀਐਲ ਪਰਿਵਾਰ ਜਾਂ ਕਮਜ਼ੋਰ ਕਿੱਤਾ ਸ਼੍ਰੇਣੀ','বিপিএল পরিবার অথবা দুর্বল পেশাগত শ্রেণি','బీపీఎల్ కుటుంబం లేదా బలహీన వృత్తి వర్గం']},
+ pmkmy:{n:['ਪੀਐਮ ਕਿਸਾਨ ਮਾਨ-ਧਨ ਯੋਜਨਾ (PM-KMY)','পিএম কিষাণ মান-ধন যোজনা (PM-KMY)','పీఎం కిసాన్ మాన్-ధన్ యోజన (PM-KMY)'],b:['60 ਸਾਲ ਤੋਂ ਬਾਅਦ ₹3,000 ਪ੍ਰਤੀ ਮਹੀਨਾ ਪੈਨਸ਼ਨ','60 বছরের পর মাসে ₹3,000 পেনশন','60 ఏళ్ల తర్వాత నెలకు ₹3,000 పింఛను'],r:['ਉਮਰ 18–40 ਸਾਲ ਅਤੇ ਛੋਟਾ/ਸੀਮਾਂਤ ਕਿਸਾਨ','বয়স 18–40 বছর এবং ক্ষুদ্র/প্রান্তিক কৃষক','వయస్సు 18–40 సంవత్సరాలు మరియు చిన్న/సన్నకారు రైతు']},
+ svanidhi:{n:['ਪੀਐਮ ਸਵਨਿਧੀ (PM-SVANidhi)','পিএম স্বনিধি (PM-SVANidhi)','పీఎం స్వనిధి (PM-SVANidhi)'],b:['ਬਿਨਾਂ ਗਾਰੰਟੀ ਕਾਰਜਸ਼ੀਲ ਪੂੰਜੀ ਕਰਜ਼ਾ: ₹10,000 → ₹20,000 → ₹50,000','জামানতবিহীন কার্যকরী মূলধন ঋণ: ₹10,000 → ₹20,000 → ₹50,000','హామీ లేని వర్కింగ్ క్యాపిటల్ రుణం: ₹10,000 → ₹20,000 → ₹50,000'],r:['ਤਸਦੀਕਸ਼ੁਦਾ ਗਲੀ / ਪੇਂਡੂ ਵਿਕਰੇਤਾ','যাচাইকৃত পথ / গ্রামীণ বিক্রেতা','ధృవీకరించబడిన వీధి / గ్రామీణ వ్యాపారి']},
+ ssy:{n:['ਸੁਕੰਨਿਆ ਸਮ੍ਰਿੱਧੀ ਯੋਜਨਾ','সুকন্যা সমৃদ্ধি যোজনা','సుకన్య సమృద్ధి యోజన'],b:['ਬੱਚੀ ਲਈ ਉੱਚ ਵਿਆਜ ਵਾਲਾ ਬੱਚਤ ਖਾਤਾ (₹250 ਤੋਂ ਜਮ੍ਹਾਂ ਸ਼ੁਰੂ)','মেয়ে শিশুর জন্য উচ্চ সুদের সঞ্চয় খাতা (₹250 থেকে জমা শুরু)','బాలిక కోసం అధిక వడ్డీ పొదుపు ఖాతా (₹250 నుండి డిపాజిట్)'],r:['ਬੱਚੀ ਦੀ ਉਮਰ 10 ਸਾਲ ਤੋਂ ਘੱਟ','মেয়ে শিশুর বয়স 10 বছরের কম','బాలిక వయస్సు 10 సంవత్సరాల కంటే తక్కువ']},
+ mgnrega:{n:['ਮਨਰੇਗਾ (MGNREGA)','মনরেগা (MGNREGA)','ఉపాధి హామీ పథకం (MGNREGA)'],b:['ਹਰ ਪੇਂਡੂ ਪਰਿਵਾਰ ਨੂੰ ਸਾਲ ਵਿੱਚ 100 ਦਿਨ ਦਾ ਗਾਰੰਟੀਸ਼ੁਦਾ ਰੁਜ਼ਗਾਰ','প্রতি গ্রামীণ পরিবারে বছরে 100 দিনের নিশ্চিত মজুরি কর্মসংস্থান','ప్రతి గ్రామీణ కుటుంబానికి సంవత్సరానికి 100 రోజుల హామీ ఉపాధి'],r:['ਸਰੀਰਕ ਮਿਹਨਤ ਕਰਨ ਲਈ ਤਿਆਰ ਪੇਂਡੂ ਬਾਲਗ','শারীরিক শ্রম করতে ইচ্ছুক গ্রামীণ প্রাপ্তবয়স্ক','శారీరక శ్రమ చేయడానికి సిద్ధంగా ఉన్న గ్రామీణ వయోజనుడు']},
+ ignwps:{n:['ਇੰਦਰਾ ਗਾਂਧੀ ਰਾਸ਼ਟਰੀ ਵਿਧਵਾ ਪੈਨਸ਼ਨ ਸਕੀਮ (IGNWPS)','ইন্দিরা গান্ধী জাতীয় বিধবা ভাতা প্রকল্প (IGNWPS)','ఇందిరా గాంధీ జాతీయ వితంతు పింఛను పథకం (IGNWPS)'],b:['ਕੇਂਦਰ ਵੱਲੋਂ ₹300–₹500 ਪ੍ਰਤੀ ਮਹੀਨਾ (ਰਾਜ ਹੋਰ ਜੋੜ ਸਕਦੇ ਹਨ)','কেন্দ্র থেকে মাসে ₹300–₹500 (রাজ্য আরও যোগ করতে পারে)','కేంద్రం నుండి నెలకు ₹300–₹500 (రాష్ట్రాలు అదనంగా ఇవ్వవచ్చు)'],r:['ਵਿਧਵਾ, ਉਮਰ ≥ 40 ਸਾਲ ਅਤੇ ਬੀਪੀਐਲ','বিধবা, বয়স ≥ 40 বছর এবং বিপিএল','వితంతువు, వయస్సు ≥ 40 సంవత్సరాలు మరియు బీపీఎల్']}
+};
+Object.keys(D2).forEach(k=>D[k].push(...D2[k]));
+S.forEach(s=>['n','b','r'].forEach(k=>s[k].push(...S2[s.id][k])));
+
+/* ---------- 3. Fact detectors (Hindi, English, Punjabi, Bengali, Telugu). One regex per fact. ---------- */
+const LU='hectares?|ha\\b|acres?|हेक्टेयर|एकड़|एकड|ਹੈਕਟੇਅਰ|ਏਕੜ|হেক্টর|হেক্টার|একর|హెక్టార్|ఎకరం|ఎకరా|ఎకర';   // land units
+const RX={
+ bplNo:/\b(non[- ]?bpl|not (a )?bpl|no bpl|apl)\b|above poverty|(बीपीएल|bpl)( कार्ड)? नहीं|रेखा से ऊपर|एपीएल|ਬੀ\.?ਪੀ\.?ਐੱ?\.?ਲ( ਕਾਰਡ)? ਨਹੀਂ|ਰੇਖਾ ਤੋਂ ਉੱਪਰ|বিপিএল( কার্ড)? (নয়|নেই|নই)|দারিদ্র্যসীমার উপরে|బీపీఎల్( కార్డు)? (కాదు|లేదు)|దారిద్య్రరేఖకు పైన/,
+ bpl:/\bbpl\b|below poverty|poverty line|antyodaya|बीपीएल|गरीबी रेखा|अंत्योदय|गरीब परिवार|poor family|ਬੀ\.?ਪੀ\.?ਐੱ?\.?ਲ|ਗਰੀਬੀ ਰੇਖਾ|ਗਰੀਬ ਪਰਿਵਾਰ|বিপিএল|দারিদ্র্য|গর[িী]ব পরিবার|బీపీఎల్|దారిద్య్ర|పేద కుటుంబ/,
+ widow:/\bwidow|विधवा|ਵਿਧਵਾ|বিধবা|వితంతు/,
+ female:/\b(woman|women|female|lady|wife|mahila)\b|महिला|औरत|स्त्री|ਔਰਤ|ਮਹਿਲਾ|ਇਸਤਰੀ|মহিলা|নারী|మహిళ|స్త్రీ/,
+ girl:/\b(daughter|girl)\b|बेटी|बच्ची|कन्या|लड़की|ਧੀ|ਕੁੜੀ|ਬੱਚੀ|ਲੜਕੀ|মেয়ে|কন্যা|కూతుర|అమ్మాయి|ఆడపిల్ల|బాలిక|కుమార్తె/,
+ adult:/\badult\b|वयस्क|\b(woman|women|lady|wife|man|men)\b|महिला|औरत|ਬਾਲਗ|ਔਰਤ|ਮਹਿਲਾ|ਆਦਮੀ|প্রাপ্তবয়স্ক|মহিলা|পুরুষ|নারী|వయోజన|మహిళ|పురుషు/,
+ farmer:/farmer|farming|cultivat|\bkisan\b|किसान|खेती|काश्तकार|ਕਿਸਾਨ|ਖੇਤੀ|কৃষক|চাষি|চাষী|চাষ|কৃষি|రైతు|వ్యవసాయ|సాగు/,
+ small:/(small|marginal)[a-z ]{0,12}farmer|marginal|(छोटा|छोटे|सीमांत|लघु)\s*(और\s*\S+\s*)?किसान|ਛੋਟਾ|ਛੋਟੇ|ਸੀਮਾਂਤ|ক্ষুদ্র|ছোট|প্রান্তিক|చిన్న|సన్నకారు/,
+ home:/homeless|no (house|home)|kutch?a|kachcha|kaccha|kacha|mud house|thatched|\bhut\b|बेघर|कच्च|झोपड़|पक्का (मकान|घर) नहीं|no pucca|without (a )?pucca|ਬੇਘਰ|ਕੱਚ[ਾੇ]\s*(ਘਰ|ਮਕਾਨ)|ਝੌਂਪੜੀ|গৃহহীন|বাড়ি নেই|ঘর নেই|কাঁচা\s*(বাড়ি|বাড়ী|ঘর)|মাটির (ঘর|বাড়ি)|কুঁড়ে|నిరాశ్రయ|ఇల్లు లేదు|పూరిల్లు|గుడిసె|కచ్చా|మట్టి ఇల్లు/,
+ vendor:/vendor|hawker|\bthela\b|rehri|फेरीवाल|रेहड़ी|ठेला|पटरी|विक्रेता|ਰੇਹੜੀ|ਫੇਰੀ ਵਾਲ|ਵਿਕਰੇਤਾ|ਠੇਲਾ|ফেরিওয়ালা|হকার|বিক্রেতা|ঠেলা|వీధి వ్యాపార|తోపుడు బండి|అమ్మకందారు/,
+ verNo:/not verified|unverified|no (vending )?cert|without (a )?cert|सत्यापित नहीं|ਤਸਦੀਕ ਨਹੀਂ|ਪ੍ਰਮਾਣਿਤ ਨਹੀਂ|যাচাই(কৃত| করা)? (নয়|নেই|নই)|ధృవీకరించబడలేదు|ధృవీకరణ లేదు/,
+ ver:/verified|vending cert|certificate of vending|सत्यापित|वेंडिंग (प्रमाण|सर्टिफिकेट)|ਤਸਦੀਕ|ਪ੍ਰਮਾਣਿਤ|যাচাই|সত্যায়িত|ధృవీకరించ|ధృవీకరణ|వెండింగ్ సర్టిఫికెట్/,
+ rural:/\b(rural|village|gram|gaon|gaanv)\b|गाँव|गांव|ग्रामीण|ਪਿੰਡ|ਪੇਂਡੂ|গ্রাম|గ్రామ|పల్లె/,
+ labour:/manual|labou?r|mazdoori|majdoori|unskilled|मजदूरी|मज़दूरी|श्रम|ਮਜ਼ਦੂਰੀ|ਮਜਦੂਰੀ|ਮਜ਼ਦੂਰ|ਮਜਦੂਰ|ਮਿਹਨਤ|শ্রম|দিনমজুর|মজুরি|కూలి|కూలీ|శ్రమ/,
+ vuln:/rag ?picker|domestic (worker|help)|construction worker|\bmason\b|plumber|painter|welder|coolie|porter|sweeper|gardener|cobbler|washerman|tailor|security guard|rickshaw|beggar|hawker|vendor|कचरा बीन|घरेलू (कामगार|नौकर)|निर्माण (मजदूर|कामगार)|राजमिस्त्री|कुली|सफाई कर्मचारी|मोची|धोबी|दर्जी|चौकीदार|रिक्शा|भिखारी|फेरीवाल|रेहड़ी|ठेला|ਉਸਾਰੀ ਮਜ਼ਦੂਰ|ਰਾਜ ਮਿਸਤਰੀ|ਘਰੇਲੂ ਕਾਮ|ਕੂੜਾ ਚੁੱਕ|ਮੋਚੀ|ਧੋਬੀ|ਦਰਜ਼ੀ|ਚੌਕੀਦਾਰ|ਰਿਕਸ਼ਾ|ਭਿਖਾਰੀ|ਕੁਲੀ|ਸਫ਼ਾਈ ਕਰਮ|ਰੇਹੜੀ|ਫੇਰੀ ਵਾਲ|ਵਿਕਰੇਤਾ|নির্মাণ শ্রমিক|রাজমিস্ত্রি|গৃহকর্মী|কুড়ানি|মুচি|ধোপা|দর্জি|পাহারাদার|রিকশা|ভিক্ষুক|কুলি|ঝাড়ুদার|সাফাইকর্মী|ফেরিওয়ালা|হকার|বিক্রেতা|నిర్మాణ కార్మిక|తాపీ మేస్త్రి|గృహ కార్మిక|చెత్త ఏరు|చెప్పులు కుట్టే|చాకలి|టైలర్|కాపలాదారు|రిక్షా|బిచ్చగాడు|కూలీ|పారిశుధ్య|వీధి వ్యాపార|తోపుడు బండి/,
+ myAge:/my age|मेरी उम्र|\bi am\b|मैं|ਮੇਰੀ ਉਮਰ|ਮੈਂ|আমার বয়স|আমি|నా వయ|నేను/
+};
+RX.land=new RegExp('(\\d+(?:\\.\\d+)?)\\s*('+LU+')');
+/* age: "age 65", "उम्र 65", "65 years/साल/ਸਾਲ/বছর/సంవత్సరాలు", "I am 65" (not followed by a land unit) */
+RX.age=new RegExp('(?:\\baged?\\b|उम्र|आयु|ਉਮਰ|বয়স|వయ(?:స్)?సు)\\D{0,12}?(\\d{1,3})|(\\d{1,3})\\s*(?:-\\s*)?(?:years?|yrs?|yr|साल|वर्ष|बरस|ਸਾਲ|ਵਰ੍ਹੇ|বছর|సంవత్సర|ఏళ్|ఏండ్)|\\bi(?: am|\'m) (\\d{1,3})\\b(?!\\s*(?:'+LU+'))');
+for(const k in RX)RX[k]=new RegExp(RX[k].source.normalize('NFC'),RX[k].flags);   // match composed/decomposed Indic characters alike
+const DIG=s=>s.replace(/[\u0966-\u096F\u09E6-\u09EF\u0A66-\u0A6F\u0C66-\u0C6F]/g,c=>(c.charCodeAt(0)&15)-6);   // Devanagari/Bengali/Gurmukhi/Telugu digits -> 0-9
+
+/** Turn free text into a profile of stated facts (null/undefined = not stated) */
+function parse(raw){
+  const q=DIG(raw.normalize('NFC').toLowerCase()),T=r=>r.test(q),p={};
+  p.bpl=T(RX.bplNo)?false:T(RX.bpl)?true:null;
+  p.widow=T(RX.widow);p.female=p.widow||T(RX.female);p.girl=T(RX.girl);
+  p.farmer=T(RX.farmer);p.small=p.farmer&&T(RX.small);
+  const m=q.match(RX.land);p.land=m?+m[1]*(/acre|एकड|ਏਕੜ|একর|ఎకర/.test(m[2])?0.4047:1):null;   // acres -> hectares
+  p.home=T(RX.home);p.vendor=T(RX.vendor);p.ver=!T(RX.verNo)&&T(RX.ver);
+  p.rural=T(RX.rural);p.labour=T(RX.labour);p.vuln=T(RX.vuln);
+  /* Ages are read clause by clause so "my daughter is 5 and I am 35" is split correctly */
+  q.split(/[,;.।\n]|\band\b|और|ਅਤੇ|এবং|\sও\s|\sআর\s|మరియు|\bbut\b/).forEach(c=>{
+    const a=c.match(RX.age);if(!a)return;
+    const n=+(a[1]||a[2]||a[3]);if(n>120)return;
+    if(RX.girl.test(c)&&!RX.myAge.test(c))p.childAge=p.childAge??n;else p.age=p.age??n;
+  });
+  if(p.girl&&p.childAge==null&&p.age<18){p.childAge=p.age;p.age=undefined;}   // "I have a girl aged 8"
+  p.adult=p.age!=null?p.age>=18:T(RX.adult);
+  return p;
+}
+
+/* ---------- 4. Strict Boolean rules (one per scheme) ---------- */
+const sf=p=>p.farmer&&(p.land!=null?p.land<=2:p.small);   // small/marginal farmer = farmer on <= 2 ha
+const E={
+ ignoaps:p=>p.age>=60&&p.bpl===true,
+ pmkisan:p=>sf(p),
+ pmayg:p=>p.home&&p.bpl===true,
+ pmuy:p=>p.female&&p.adult&&p.bpl===true,
+ pmjay:p=>p.bpl===true||p.vuln,
+ pmkmy:p=>p.age>=18&&p.age<=40&&sf(p),
+ svanidhi:p=>p.vendor&&p.ver,
+ ssy:p=>p.girl&&p.childAge!=null&&p.childAge<10,
+ mgnrega:p=>p.rural&&p.adult&&p.labour,
+ ignwps:p=>p.widow&&p.age>=40&&p.bpl===true
+};
+
+/* ---------- 5. State & helpers ---------- */
+let lang='hi',st='idle',rec=null,listening=false,res=null,sel=0,timer,toastT,waveT,utt=null;
+const ticks=new Set();                                   // ticked documents ("scheme:doc")
+const LG=['hi','en','pa','bn','te'],LC={hi:'hi-IN',en:'en-IN',pa:'pa-IN',bn:'bn-IN',te:'te-IN'};   // language order = array index
+const SAY=['बोलिए','बोलिए','ਬੋਲੋ','বলুন','మాట్లాడండి'];
+/* Punjabi / Bengali / Telugu UI strings, keyed by the English text used in t(hindi, english) */
+const X={
+ 'Speak or type here…':['ਬੋਲੋ ਜਾਂ ਇੱਥੇ ਲਿਖੋ…','বলুন বা এখানে লিখুন…','మాట్లాడండి లేదా ఇక్కడ టైప్ చేయండి…'],
+ 'Your question (live transcript)':['ਤੁਹਾਡਾ ਸਵਾਲ (ਲਾਈਵ ਟ੍ਰਾਂਸਕ੍ਰਿਪਟ)','আপনার প্রশ্ন (লাইভ ট্রান্সক্রিপ্ট)','మీ ప్రశ్న (లైవ్ ట్రాన్స్‌క్రిప్ట్)'],
+ 'Quick demo scenarios':['ਤੁਰੰਤ ਡੈਮੋ ਉਦਾਹਰਨਾਂ','দ্রুত ডেমো উদাহরণ','త్వరిత డెమో ఉదాహరణలు'],
+ 'Matched Scheme Details':['ਮੇਲ ਖਾਂਦੀ ਸਕੀਮ ਦਾ ਵੇਰਵਾ','মিলে যাওয়া প্রকল্পের বিবরণ','సరిపోలిన పథక వివరాలు'],
+ 'Required Documents — Step by Step':['ਲੋੜੀਂਦੇ ਦਸਤਾਵੇਜ਼ — ਕਦਮ-ਦਰ-ਕਦਮ','প্রয়োজনীয় নথি — ধাপে ধাপে','అవసరమైన పత్రాలు — దశల వారీగా'],
+ 'Press SPEAK, type, or pick an example above.':['ਬਟਨ ਦਬਾ ਕੇ ਬੋਲੋ, ਲਿਖੋ ਜਾਂ ਉੱਪਰੋਂ ਕੋਈ ਉਦਾਹਰਨ ਚੁਣੋ।','বোতাম চেপে বলুন, লিখুন বা উপরের একটি উদাহরণ বেছে নিন।','బటన్ నొక్కి మాట్లాడండి, టైప్ చేయండి లేదా పై ఉదాహరణను ఎంచుకోండి.'],
+ 'The document checklist appears here once a scheme matches.':['ਸਕੀਮ ਮਿਲਣ ’ਤੇ ਦਸਤਾਵੇਜ਼ ਸੂਚੀ ਇੱਥੇ ਦਿਖਾਈ ਦੇਵੇਗੀ।','প্রকল্প মিললে নথির তালিকা এখানে দেখা যাবে।','పథకం సరిపోలినప్పుడు పత్రాల జాబితా ఇక్కడ కనిపిస్తుంది.'],
+ 'Understood from your query:':['ਤੁਹਾਡੇ ਵੇਰਵੇ ਤੋਂ ਸਮਝਿਆ ਗਿਆ:','আপনার বিবরণ থেকে যা বোঝা গেছে:','మీ వివరాల నుండి అర్థమైనది:'],
+ 'Nothing recognised':['ਕੁਝ ਵੀ ਪਛਾਣਿਆ ਨਹੀਂ ਗਿਆ','কিছুই শনাক্ত হয়নি','ఏదీ గుర్తించబడలేదు'],
+ 'No checklist — no scheme matched.':['ਕੋਈ ਸੂਚੀ ਨਹੀਂ — ਕੋਈ ਸਕੀਮ ਮੇਲ ਨਹੀਂ ਖਾਂਦੀ।','কোনো তালিকা নেই — কোনো প্রকল্প মেলেনি।','జాబితా లేదు — ఏ పథకమూ సరిపోలలేదు.'],
+ 'Key Financial Benefit':['ਮੁੱਖ ਆਰਥਿਕ ਲਾਭ','মূল আর্থিক সুবিধা','ముఖ్య ఆర్థిక ప్రయోజనం'],
+ 'Eligibility Rule':['ਯੋਗਤਾ ਨਿਯਮ','যোগ্যতার নিয়ম','అర్హత నియమం'],
+ 'Apply with originals and photocopies at your Gram Panchayat, CSC, bank or post office.':['ਅਸਲ ਦਸਤਾਵੇਜ਼ ਅਤੇ ਫੋਟੋਕਾਪੀਆਂ ਲੈ ਕੇ ਗ੍ਰਾਮ ਪੰਚਾਇਤ, CSC, ਬੈਂਕ ਜਾਂ ਡਾਕਘਰ ਵਿੱਚ ਅਰਜ਼ੀ ਦਿਓ।','মূল নথি ও ফটোকপি নিয়ে গ্রাম পঞ্চায়েত, CSC, ব্যাংক বা ডাকঘরে আবেদন করুন।','అసలు పత్రాలు, ఫొటోకాపీలతో గ్రామ పంచాయతీ, CSC, బ్యాంకు లేదా పోస్టాఫీసులో దరఖాస్తు చేయండి.'],
+ 'Print':['ਪ੍ਰਿੰਟ','প্রিন্ট','ముద్రించండి'],'Save':['ਸੇਵ ਕਰੋ','সেভ করুন','సేవ్ చేయండి'],
+ 'Age':['ਉਮਰ','বয়স','వయస్సు'],'Girl child age':['ਬੱਚੀ ਦੀ ਉਮਰ','মেয়ে শিশুর বয়স','బాలిక వయస్సు'],
+ 'Yes':['ਹਾਂ','হ্যাঁ','అవును'],'No':['ਨਹੀਂ','না','కాదు'],
+ 'Widow':['ਵਿਧਵਾ','বিধবা','వితంతువు'],'Female':['ਔਰਤ','মহিলা','మహిళ'],'Farmer':['ਕਿਸਾਨ','কৃষক','రైతు'],
+ 'Small/Marginal':['ਛੋਟਾ/ਸੀਮਾਂਤ','ক্ষুদ্র/প্রান্তিক','చిన్న/సన్నకారు'],
+ 'Homeless / kutcha house':['ਬੇਘਰ / ਕੱਚਾ ਮਕਾਨ','গৃহহীন / কাঁচা বাড়ি','నిరాశ్రయ / కచ్చా ఇల్లు'],
+ 'Vendor':['ਵਿਕਰੇਤਾ','বিক্রেতা','వ్యాపారి'],'verified':['ਤਸਦੀਕਸ਼ੁਦਾ','যাচাইকৃত','ధృవీకరించబడింది'],
+ 'Rural':['ਪੇਂਡੂ','গ্রামীণ','గ్రామీణ'],'Manual labour':['ਸਰੀਰਕ ਮਿਹਨਤ','শারীরিক শ্রম','శారీరక శ్రమ'],
+ 'Vulnerable occupation':['ਕਮਜ਼ੋਰ ਕਿੱਤਾ ਸ਼੍ਰੇਣੀ','দুর্বল পেশাগত শ্রেণি','బలహీన వృత్తి వర్గం'],
+ 'Documents ready: ':['ਤਿਆਰ ਦਸਤਾਵੇਜ਼: ','প্রস্তুত নথি: ','సిద్ధమైన పత్రాలు: '],
+ 'Please speak or type your question.':['ਕਿਰਪਾ ਕਰਕੇ ਬੋਲੋ ਜਾਂ ਆਪਣਾ ਸਵਾਲ ਲਿਖੋ।','অনুগ্রহ করে বলুন বা আপনার প্রশ্ন লিখুন।','దయచేసి మాట్లాడండి లేదా మీ ప్రశ్న టైప్ చేయండి.'],
+ 'Voice output is not supported here. Please read the screen.':['ਇੱਥੇ ਆਵਾਜ਼ ਸਮਰਥਿਤ ਨਹੀਂ। ਕਿਰਪਾ ਕਰਕੇ ਸਕਰੀਨ ਦੇਖੋ।','এখানে ভয়েস সমর্থিত নয়। অনুগ্রহ করে পর্দা দেখুন।','ఇక్కడ వాయిస్ మద్దతు లేదు. దయచేసి స్క్రీన్ చూడండి.'],
+ 'No speech heard. Try again or type your question.':['ਆਵਾਜ਼ ਨਹੀਂ ਸੁਣਾਈ ਦਿੱਤੀ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ ਜਾਂ ਲਿਖੋ।','কোনো আওয়াজ শোনা যায়নি। আবার চেষ্টা করুন বা লিখুন।','ఏ శబ్దం వినిపించలేదు. మళ్లీ ప్రయత్నించండి లేదా టైప్ చేయండి.'],
+ 'You are currently not eligible for any matching schemes based on the provided details. Please specify your age, BPL status, occupation, or landholding.':['ਦਿੱਤੇ ਵੇਰਵਿਆਂ ਦੇ ਆਧਾਰ ’ਤੇ ਤੁਸੀਂ ਇਸ ਸਮੇਂ ਕਿਸੇ ਵੀ ਮੇਲ ਖਾਂਦੀ ਸਕੀਮ ਲਈ ਯੋਗ ਨਹੀਂ ਹੋ। ਕਿਰਪਾ ਕਰਕੇ ਆਪਣੀ ਉਮਰ, ਬੀਪੀਐਲ ਸਥਿਤੀ, ਕਿੱਤਾ ਜਾਂ ਜ਼ਮੀਨ ਦੀ ਜਾਣਕਾਰੀ ਦੱਸੋ।','প্রদত্ত তথ্যের ভিত্তিতে আপনি বর্তমানে কোনো মিল থাকা প্রকল্পের জন্য যোগ্য নন। অনুগ্রহ করে আপনার বয়স, বিপিএল অবস্থা, পেশা বা জমির পরিমাণ জানান।','ఇచ్చిన వివరాల ఆధారంగా మీరు ప్రస్తుతం ఏ పథకానికీ అర్హులు కారు. దయచేసి మీ వయస్సు, బీపీఎల్ స్థితి, వృత్తి లేదా భూమి వివరాలు తెలపండి.']
+};
+/* Spoken/visual sentences that contain numbers or names (index = language) */
+const CNT=[n=>'आप '+n+' योजना(ओं) के लिए पात्र हैं',n=>'Eligible for '+n+' scheme'+(n>1?'s':''),n=>'ਤੁਸੀਂ '+n+' ਸਕੀਮ(ਾਂ) ਲਈ ਯੋਗ ਹੋ',n=>'আপনি '+n+'টি প্রকল্পের জন্য যোগ্য',n=>'మీరు '+n+' పథకం(ల)కు అర్హులు'];
+const MORE=[n=>' और '+n+' अन्य',n=>' and '+n+' more',n=>' ਅਤੇ '+n+' ਹੋਰ',n=>' এবং আরও '+n+'টি',n=>' మరియు మరో '+n];
+const SP=[n=>'आपके विवरण के अनुसार, आप '+n+' के लिए पात्र हैं। आवश्यक दस्तावेज स्क्रीन पर प्रदर्शित हैं।',
+ n=>'Based on your details, you are eligible for '+n+'. The required documents are shown on the screen.',
+ n=>'ਤੁਹਾਡੇ ਵੇਰਵਿਆਂ ਅਨੁਸਾਰ, ਤੁਸੀਂ '+n+' ਲਈ ਯੋਗ ਹੋ। ਲੋੜੀਂਦੇ ਦਸਤਾਵੇਜ਼ ਸਕਰੀਨ ’ਤੇ ਦਿਖਾਏ ਗਏ ਹਨ।',
+ n=>'আপনার তথ্য অনুযায়ী, আপনি '+n+' প্রকল্পের জন্য যোগ্য। প্রয়োজনীয় নথি পর্দায় দেখানো হয়েছে।',
+ n=>'మీ వివరాల ప్రకారం, మీరు '+n+' పథకానికి అర్హులు. అవసరమైన పత్రాలు స్క్రీన్‌పై చూపబడ్డాయి.'];
+const $=id=>document.getElementById(id),li=()=>LG.indexOf(lang),t=(h,e)=>lang==='hi'?h:lang==='en'?e:((X[e]||[])[li()-2]||e);
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const short=s=>s.replace(/\s*\(.*?\)/g,'');
+const NO=()=>t('आप दिए गए विवरण के आधार पर वर्तमान में किसी भी योजना के लिए पात्र नहीं हैं। कृपया अपनी आयु, बीपीएल स्थिति, व्यवसाय या भूमि की जानकारी बताएं।','You are currently not eligible for any matching schemes based on the provided details. Please specify your age, BPL status, occupation, or landholding.');
+
+function toast(m){const e=$('toast');e.textContent=m;e.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('on'),5500);}
+
+/** Animated soundwave bars (active while listening or speaking) */
+function wave(on){
+  clearInterval(waveT);const bs=[...$('wave').children];
+  if(!on){bs.forEach(b=>b.style.transform='scaleY(.12)');return;}
+  waveT=setInterval(()=>bs.forEach((b,i)=>b.style.transform='scaleY('+(.15+Math.abs(Math.sin(Date.now()/180+i*.6))*Math.random()*.85)+')'),90);
+}
+/** Status text + LED ring + waveform: idle | listening | busy | speaking */
+function setSt(s){
+  st=s;$('ring').className='ring '+(s==='listening'||s==='busy'?s:'');$('wave').className='wave '+s;
+  $('status').textContent={idle:'IDLE - Click button to speak',listening:'LISTENING... ('+SAY[li()]+')',busy:'PROCESSING LOCAL RULES...',speaking:'SPEAKING... (उत्तर सुनाया जा रहा है)'}[s];
+  wave(s==='listening'||s==='speaking');
+}
+
+/* ---------- 6. Language ---------- */
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.querySelectorAll('.sw button').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
+  document.querySelectorAll('[data-h]').forEach(e=>e.textContent=t(e.dataset.h,e.dataset.e));
+  $('tx').placeholder=t('बोलें या यहाँ लिखें…','Speak or type here…');
+  setSt(st);render();
+}
+function setLang(l){
+  lang=l;if(listening&&rec)rec.abort();
+  utt=null;window.speechSynthesis&&speechSynthesis.cancel();
+  if(st==='speaking')st='idle';
+  applyLang();
+}
+
+/* ---------- 7. Rendering ---------- */
+function chips(p){
+  const c=[],y=t('हाँ','Yes'),n=t('नहीं','No');
+  if(p.age!=null)c.push(t('आयु','Age')+': '+p.age);
+  if(p.childAge!=null)c.push(t('बालिका की आयु','Girl child age')+': '+p.childAge);
+  if(p.bpl!=null)c.push('BPL: '+(p.bpl?y:n));
+  if(p.widow)c.push(t('विधवा','Widow'));else if(p.female)c.push(t('महिला','Female'));
+  if(p.farmer)c.push(t('किसान','Farmer')+(p.land!=null?' · '+(+p.land.toFixed(2))+' ha':p.small?' · '+t('छोटा/सीमांत','Small/Marginal'):''));
+  if(p.home)c.push(t('बेघर / कच्चा मकान','Homeless / kutcha house'));
+  if(p.vendor)c.push(t('विक्रेता','Vendor')+(p.ver?' ✓ '+t('सत्यापित','verified'):''));
+  if(p.rural)c.push(t('ग्रामीण','Rural'));
+  if(p.labour)c.push(t('शारीरिक श्रम','Manual labour'));
+  if(p.vuln)c.push(t('कमजोर व्यावसायिक श्रेणी','Vulnerable occupation'));
+  return c;
+}
+function render(){
+  const lb=$('lb'),rb=$('rb');
+  if(!res){
+    lb.innerHTML='<p class="mut">'+t('बटन दबाकर बोलें, लिखें या ऊपर का कोई उदाहरण चुनें।','Press SPEAK, type, or pick an example above.')+'</p>';
+    rb.innerHTML='<p class="mut">'+t('पात्र योजना मिलने पर दस्तावेज़ सूची यहाँ दिखेगी।','The document checklist appears here once a scheme matches.')+'</p>';return;
+  }
+  const {p,m}=res,i=li(),o=lang==='en'?0:1,ch=chips(p);
+  const seen='<p class="seen"><b>'+t('आपके विवरण से समझा गया:','Understood from your query:')+'</b> '+(ch.length?ch.map(c=>'<span class="chip">'+esc(c)+'</span>').join(''):'<span class="chip warn">'+t('कुछ भी पहचाना नहीं गया','Nothing recognised')+'</span>')+'</p>';
+  if(!m.length){   // explicit rejection (shown here and spoken in speak())
+    lb.innerHTML=seen+'<div class="no">'+esc(NO())+'</div>';
+    rb.innerHTML='<p class="mut">'+t('कोई दस्तावेज़ सूची नहीं — कोई योजना मेल नहीं खाती।','No checklist — no scheme matched.')+'</p>';return;
+  }
+  if(sel>=m.length)sel=0;const s=m[sel];
+  lb.innerHTML=seen+'<p class="cnt">'+CNT[i](m.length)+'</p>'
+   +'<div class="tabs">'+m.map((x,k)=>'<button class="tab'+(k===sel?' on':'')+'" onclick="pick('+k+')">'+esc(x.sh)+'</button>').join('')+'</div>'
+   +'<h3>'+esc(s.n[i])+'</h3><p class="mut">'+esc(s.n[o])+'</p>'
+   +'<div class="ben"><span class="lab">'+t('मुख्य लाभ','Key Financial Benefit')+'</span><b>'+esc(s.b[i])+'</b></div>'
+   +'<span class="lab">'+t('पात्रता नियम','Eligibility Rule')+'</span><p style="margin:2px 0 0">'+esc(s.r[i])+'</p>';
+  rb.innerHTML='<p class="title">'+esc(short(s.n[i]))+'</p><ol class="steps">'
+   +s.d.map(k=>{const key=s.id+':'+k,on=ticks.has(key);
+     return '<li class="'+(on?'done':'')+'"><label><input type="checkbox" '+(on?'checked':'')+' onchange="tick(\''+key+'\',this)"><span class="t"><b>'+esc(D[k][i])+'</b><small>'+esc(D[k][o])+'</small></span></label></li>';}).join('')
+   +'<li class="last">'+t('मूल दस्तावेज़ और फोटोकॉपी लेकर ग्राम पंचायत / CSC / बैंक / डाकघर में आवेदन करें।','Apply with originals and photocopies at your Gram Panchayat, CSC, bank or post office.')+'</li></ol>'
+   +'<p id="prog" class="mut" style="margin:10px 0"></p><div class="row np"><button class="grn" onclick="window.print()">🖨️ '+t('प्रिंट','Print')+'</button><button class="out" onclick="save()">💾 '+t('सेव करें','Save')+'</button></div>';
+  prog();
+}
+const pick=k=>{sel=k;render();};
+function tick(k,el){el.checked?ticks.add(k):ticks.delete(k);el.closest('li').classList.toggle('done',el.checked);prog();}
+function prog(){const a=document.querySelectorAll('.steps input'),d=document.querySelectorAll('.steps input:checked'),e=$('prog');
+  if(e)e.textContent=t('तैयार दस्तावेज़: ','Documents ready: ')+d.length+' / '+a.length;}
+
+/* ---------- 8. Speech output (English / Hindi) ---------- */
+function say(msg){
+  if(!('speechSynthesis' in window)){toast(t('इस ब्राउज़र में आवाज़ समर्थित नहीं है। कृपया स्क्रीन देखें।','Voice output is not supported here. Please read the screen.'));return;}
+  const u=new SpeechSynthesisUtterance(msg);u.lang=LC[lang];
+  const v=speechSynthesis.getVoices(),f=x=>x.lang.replace('_','-').toLowerCase();     // Android uses hi_IN
+  const vv=v.find(x=>f(x)===u.lang.toLowerCase())||v.find(x=>f(x).startsWith(lang));
+  if(vv)u.voice=vv;else if(v.length&&lang!=='en')toast('Voice for this language is not installed on this device — the answer is shown on screen.');
+  u.rate=.95;utt=u;
+  u.onstart=()=>{if(utt===u)setSt('speaking');};
+  u.onend=u.onerror=()=>{if(utt===u&&st==='speaking')setSt('idle');};
+  speechSynthesis.cancel();setTimeout(()=>speechSynthesis.speak(u),60);   // delay: Chrome can drop speech right after cancel()
+}
+function speak(){
+  const m=res.m;if(!m.length){say(NO());return;}
+  const n=m.slice(0,3).map(x=>short(x.n[li()])).join(', ')+(m.length>3?MORE[li()](m.length-3):'');
+  say(SP[li()](n));
+}
+
+/* ---------- 9. Query pipeline ---------- */
+function run(text){
+  const q=(typeof text==='string'?text:$('tx').value).trim();
+  if(!q){toast(t('कृपया बोलें या अपना प्रश्न लिखें।','Please speak or type your question.'));return;}
+  $('tx').value=q;setSt('busy');clearTimeout(timer);
+  timer=setTimeout(()=>{
+    const p=parse(q);res={p,m:S.filter(s=>E[s.id](p))};sel=0;ticks.clear();
+    render();setSt('idle');speak();
+    $('out').scrollIntoView({behavior:'smooth',block:'start'});
+  },450);
+}
+
+/* ---------- 10. Speech recognition ---------- */
+function init(){
+  rec=new SR();rec.interimResults=true;rec.continuous=false;
+  rec.onstart=()=>{listening=true;setSt('listening');};
+  rec.onresult=e=>{
+    let f='',i='';
+    for(let k=e.resultIndex;k<e.results.length;k++){const x=e.results[k][0].transcript;e.results[k].isFinal?f+=x:i+=x;}
+    $('tx').value=f||i;if(f){listening=false;run(f);}
+  };
+  rec.onerror=e=>{
+    listening=false;setSt('idle');if(e.error==='aborted')return;
+    if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('Microphone blocked. Allow mic access, or tap an example / type your question.');
+    else if(e.error==='no-speech')toast(t('आवाज़ नहीं सुनाई दी। फिर कोशिश करें या टाइप करें।','No speech heard. Try again or type your question.'));
+    else if(e.error==='network')toast('Voice input needs an internet connection in Chrome. Use the examples or type instead.');
+    else toast('Voice input problem ('+e.error+'). Use the examples or type instead.');
+  };
+  rec.onend=()=>{if(listening){listening=false;setSt('idle');}};
+}
+function toggle(){
+  if(!SR){toast('Voice input is not supported here. Please tap an example or type your question.');return;}
+  if(!rec)init();
+  if(listening){rec.stop();return;}
+  clearTimeout(timer);utt=null;window.speechSynthesis&&speechSynthesis.cancel();setSt('idle');   // stop talking before listening
+  $('tx').value='';rec.lang=LC[lang];
+  try{rec.start();}catch(e){}
+}
+
+/* ---------- 11. Save checklist (.txt, keeps ticks) ---------- */
+function save(){
+  if(!res||!res.m.length)return;const s=res.m[sel];
+  const l=['SahaYak — Document Checklist','',s.n[1],s.n[0],'','Benefit: '+s.b[1],'Rule: '+s.r[1],'','Steps:',
+    ...s.d.map((k,j)=>(j+1)+'. ['+(ticks.has(s.id+':'+k)?'x':' ')+'] '+D[k][1]+' / '+D[k][0]),'','Confirm details at your Gram Panchayat or CSC.'];
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([l.join('\n')],{type:'text/plain;charset=utf-8'}));
+  a.download='sahayak-'+s.id+'.txt';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* ---------- 12. Boot ---------- */
+const P=[['👵','मेरी उम्र 65 वर्ष है, बीपीएल कार्ड है, पेंशन मिलेगी?'],['🌾','I am a farmer with 1.5 hectare land'],['🧑‍🌾','I am 30 years old and a small farmer'],
+ ['🏚️','We live in a kutcha house and our family is BPL'],['🔥','I am a woman from a BPL family'],['🛒','I am a verified street vendor'],['👧','My daughter is 5 years old'],
+ ['⛏️','मैं गाँव में रहता हूँ और मजदूरी करना चाहता हूँ, उम्र 30 वर्ष'],['👩','I am a widow, age 52, BPL'],['🏥','I work as a construction worker'],
+ ['🗣️','ਮੇਰੀ ਉਮਰ 65 ਸਾਲ ਹੈ, ਬੀਪੀਐਲ ਕਾਰਡ ਹੈ'],['🗣️','আমার বয়স ৬৫ বছর, আমার বিপিএল কার্ড আছে'],['🗣️','నా వయస్సు 65 సంవత్సరాలు, నాకు బీపీఎల్ కార్డు ఉంది'],['❔','pension'],['👋','hello']];   // last two are rejection tests
+for(let i=0;i<32;i++)$('wave').appendChild(document.createElement('i'));
+P.forEach(([e,q])=>{const b=document.createElement('button');b.textContent=e+' '+q;b.onclick=()=>run(q);$('presets').appendChild(b);});
+if('speechSynthesis' in window)speechSynthesis.getVoices();   // nudges Chrome to load the voice list
+applyLang();
+if(!SR)toast('Voice input not supported in this browser — use Chrome, or tap an example / type your question.');
+</script>
+</body>
+</html>
